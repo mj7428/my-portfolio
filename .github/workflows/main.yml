@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev_mayank      # Auto trigger on push to dev_mayank
+  workflow_dispatch:    # Allows manual trigger from GitHub Actions UI
 
 jobs:
   approval-and-merge:
