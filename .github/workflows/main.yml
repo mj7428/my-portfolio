@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - dev_mayank      # Auto trigger on push to dev_mayank
-  pull_request:
-    branches:
-      - DEV             # Trigger on PR to dev
-      - UAT             # Trigger on PR to UAT
-      - main            # Trigger on PR to main
 
 jobs:
   approval-and-merge:
@@ -32,6 +27,7 @@ jobs:
           approval-type: 'manual'
           approval-message: 'Please approve merging changes from dev_mayank to dev branch.'
 
+      # Step 4: Merge changes to DEV branch after approval
       - name: Merge changes to DEV branch
         if: github.ref == 'refs/heads/dev_mayank' && github.event.workflow_run.conclusion == 'success'
         run: |
@@ -39,14 +35,21 @@ jobs:
           git merge --no-ff ${{ github.head_ref }}
           git push origin DEV
 
-      # Step 4: Manual approval for merging to UAT
+      # Step 5: Create Pull Request from DEV to UAT
+      - name: Create Pull Request from DEV to UAT
+        if: github.ref == 'refs/heads/DEV'
+        run: |
+          gh pr create --base UAT --head DEV --title "Merge from DEV to UAT" --body "Automated PR after DEV approval."
+      
+      # Step 6: Manual approval for merging to UAT
       - name: Wait for Manual Approval to Merge to UAT
         if: github.event.pull_request.base.ref == 'UAT'
         uses: peter-evans/approval-action@v2
         with:
           approval-type: 'manual'
-          approval-message: 'Please approve merging to the UAT branch.'
+          approval-message: 'Please approve merging changes from DEV to UAT branch.'
 
+      # Step 7: Merge changes to UAT branch after approval
       - name: Merge changes to UAT branch
         if: github.event.pull_request.base.ref == 'UAT' && github.event.workflow_run.conclusion == 'success'
         run: |
@@ -54,14 +57,21 @@ jobs:
           git merge --no-ff ${{ github.head_ref }}
           git push origin UAT
 
-      # Step 5: Manual approval for merging to main branch
+      # Step 8: Create Pull Request from UAT to main
+      - name: Create Pull Request from UAT to main
+        if: github.ref == 'refs/heads/UAT'
+        run: |
+          gh pr create --base main --head UAT --title "Merge from UAT to main" --body "Automated PR after UAT approval."
+
+      # Step 9: Manual approval for merging to main
       - name: Wait for Manual Approval to Merge to Main
         if: github.event.pull_request.base.ref == 'main'
         uses: peter-evans/approval-action@v2
         with:
           approval-type: 'manual'
-          approval-message: 'Please approve merging to the main branch.'
+          approval-message: 'Please approve merging changes from UAT to main branch.'
 
+      # Step 10: Merge changes to main branch after approval
       - name: Merge changes to main branch
         if: github.event.pull_request.base.ref == 'main' && github.event.workflow_run.conclusion == 'success'
         run: |
