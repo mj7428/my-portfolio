@@ -6,7 +6,7 @@ on:
       - dev_mayank      # Auto trigger on push to dev_mayank
   pull_request:
     branches:
-      - dev             # Trigger on PR to dev
+      - DEV             # Trigger on PR to dev
       - UAT             # Trigger on PR to UAT
       - main            # Trigger on PR to main
 
@@ -24,19 +24,19 @@ jobs:
         run: echo "Changes pushed to dev_mayank, waiting for manual approval to merge to dev."
 
       # Step 2: Manual approval for merging to dev
-      - name: Wait for Manual Approval to Merge to Dev
+      - name: Wait for Manual Approval to Merge to DEV
         if: github.ref == 'refs/heads/dev_mayank'
         uses: peter-evans/approval-action@v2
         with:
           approval-type: 'manual'
           approval-message: 'Please approve merging changes from dev_mayank to dev branch.'
 
-      - name: Merge changes to dev branch
+      - name: Merge changes to DEV branch
         if: github.ref == 'refs/heads/dev_mayank'
         run: |
-          git checkout dev
+          git checkout DEV
           git merge --no-ff ${{ github.head_ref }}
-          git push origin dev
+          git push origin DEV
 
       # Step 3: Manual approval for merging to UAT
       - name: Wait for Manual Approval to Merge to UAT
