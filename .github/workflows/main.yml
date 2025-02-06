@@ -9,6 +9,9 @@ on:
 jobs:
   approval-and-merge:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
 
     steps:
       # Step 1: Checkout repository code
@@ -18,64 +21,59 @@ jobs:
       # Step 2: Auto-trigger when code is pushed to dev_mayank
       - name: Auto Trigger for dev_mayank
         if: github.ref == 'refs/heads/dev_mayank'
-        run: echo "Changes pushed to dev_mayank, waiting for manual approval to merge to dev."
+        run: echo "Changes pushed to dev_mayank. Please trigger workflow_dispatch to merge to DEV."
 
-      # Step 3: Manual approval for merging to DEV
+      # Step 3: Wait for Manual Approval (Handled by workflow_dispatch)
       - name: Wait for Manual Approval to Merge to DEV
-        if: github.ref == 'refs/heads/dev_mayank'
-        uses: peter-evans/approval-action@v2
-        with:
-          approval-type: 'manual'
-          approval-message: 'Please approve merging changes from dev_mayank to dev branch.'
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "Manual approval received, proceeding with merge to DEV."
 
       # Step 4: Merge changes to DEV branch after approval
       - name: Merge changes to DEV branch
-        if: github.ref == 'refs/heads/dev_mayank' && github.event.workflow_run.conclusion == 'success'
+        if: github.event_name == 'workflow_dispatch'
         run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
           git checkout DEV
-          git merge --no-ff ${{ github.head_ref }}
+          git merge --no-ff dev_mayank
           git push origin DEV
 
       # Step 5: Create Pull Request from DEV to UAT
       - name: Create Pull Request from DEV to UAT
-        if: github.ref == 'refs/heads/DEV'
         run: |
           gh pr create --base UAT --head DEV --title "Merge from DEV to UAT" --body "Automated PR after DEV approval."
-      
-      # Step 6: Manual approval for merging to UAT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 6: Wait for Manual Approval for UAT (Handled by workflow_dispatch)
       - name: Wait for Manual Approval to Merge to UAT
-        if: github.event.pull_request.base.ref == 'UAT'
-        uses: peter-evans/approval-action@v2
-        with:
-          approval-type: 'manual'
-          approval-message: 'Please approve merging changes from DEV to UAT branch.'
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "Manual approval received, proceeding with merge to UAT."
 
       # Step 7: Merge changes to UAT branch after approval
       - name: Merge changes to UAT branch
-        if: github.event.pull_request.base.ref == 'UAT' && github.event.workflow_run.conclusion == 'success'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git checkout UAT
-          git merge --no-ff ${{ github.head_ref }}
+          git merge --no-ff DEV
           git push origin UAT
 
       # Step 8: Create Pull Request from UAT to main
       - name: Create Pull Request from UAT to main
-        if: github.ref == 'refs/heads/UAT'
         run: |
           gh pr create --base main --head UAT --title "Merge from UAT to main" --body "Automated PR after UAT approval."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 9: Manual approval for merging to main
+      # Step 9: Wait for Manual Approval for Main (Handled by workflow_dispatch)
       - name: Wait for Manual Approval to Merge to Main
-        if: github.event.pull_request.base.ref == 'main'
-        uses: peter-evans/approval-action@v2
-        with:
-          approval-type: 'manual'
-          approval-message: 'Please approve merging changes from UAT to main branch.'
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "Manual approval received, proceeding with merge to main."
 
       # Step 10: Merge changes to main branch after approval
       - name: Merge changes to main branch
-        if: github.event.pull_request.base.ref == 'main' && github.event.workflow_run.conclusion == 'success'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git checkout main
-          git merge --no-ff ${{ github.head_ref }}
+          git merge --no-ff UAT
           git push origin main
