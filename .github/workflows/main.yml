@@ -15,15 +15,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repository code
       - name: Checkout repository code
         uses: actions/checkout@v2
 
-      # Step 1: Auto-trigger when code is pushed to dev_mayank
+      # Step 2: Auto-trigger when code is pushed to dev_mayank
       - name: Auto Trigger for dev_mayank
         if: github.ref == 'refs/heads/dev_mayank'
         run: echo "Changes pushed to dev_mayank, waiting for manual approval to merge to dev."
 
-      # Step 2: Manual approval for merging to dev
+      # Step 3: Manual approval for merging to DEV
       - name: Wait for Manual Approval to Merge to DEV
         if: github.ref == 'refs/heads/dev_mayank'
         uses: peter-evans/approval-action@v2
@@ -32,13 +33,13 @@ jobs:
           approval-message: 'Please approve merging changes from dev_mayank to dev branch.'
 
       - name: Merge changes to DEV branch
-        if: github.ref == 'refs/heads/dev_mayank'
+        if: github.ref == 'refs/heads/dev_mayank' && github.event.workflow_run.conclusion == 'success'
         run: |
           git checkout DEV
           git merge --no-ff ${{ github.head_ref }}
           git push origin DEV
 
-      # Step 3: Manual approval for merging to UAT
+      # Step 4: Manual approval for merging to UAT
       - name: Wait for Manual Approval to Merge to UAT
         if: github.event.pull_request.base.ref == 'UAT'
         uses: peter-evans/approval-action@v2
@@ -47,13 +48,13 @@ jobs:
           approval-message: 'Please approve merging to the UAT branch.'
 
       - name: Merge changes to UAT branch
-        if: github.event.pull_request.base.ref == 'UAT'
+        if: github.event.pull_request.base.ref == 'UAT' && github.event.workflow_run.conclusion == 'success'
         run: |
           git checkout UAT
           git merge --no-ff ${{ github.head_ref }}
           git push origin UAT
 
-      # Step 4: Manual approval for merging to main branch
+      # Step 5: Manual approval for merging to main branch
       - name: Wait for Manual Approval to Merge to Main
         if: github.event.pull_request.base.ref == 'main'
         uses: peter-evans/approval-action@v2
@@ -62,7 +63,7 @@ jobs:
           approval-message: 'Please approve merging to the main branch.'
 
       - name: Merge changes to main branch
-        if: github.event.pull_request.base.ref == 'main'
+        if: github.event.pull_request.base.ref == 'main' && github.event.workflow_run.conclusion == 'success'
         run: |
           git checkout main
           git merge --no-ff ${{ github.head_ref }}
